@@ -165,6 +165,13 @@ async def remove_tags(file_id):
     file_data["_id"] = str(file_data["_id"])
     return jsonify(file_data)
 
+@app.route('/tags', methods=['GET'])
+async def get_tags():
+    tags = []
+    async for file in db["files"].find():
+        tags += file["tags"]
+    return jsonify(list(set(tags)))
+
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
