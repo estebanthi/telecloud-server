@@ -7,7 +7,6 @@ import yaml
 from motor.motor_asyncio import AsyncIOMotorClient
 import bson
 
-from thumbnail_generator import ThumbnailGenerator
 from file_splitter import FileSplitter
 
 
@@ -38,20 +37,6 @@ async def upload():
     file_size = int(form_data['size'])
     tags = form_data.getlist('tags')
 
-    if not os.path.exists('temp'):
-        os.mkdir('temp')
-
-    file_path = os.path.join('temp', file_name)
-    await file.save(file_path)
-
-    thumbnail_generator = ThumbnailGenerator()
-    thumbnail = thumbnail_generator.generate(file_path, file_type)
-
-    thumbnail_message = await telegram_client.send_file('me', thumbnail, caption=file_name, force_document=True)
-
-    os.remove(file_path)
-    os.remove(thumbnail)
-
     chunks = [file]
     if file_size >= telegram_max_file_size:
         file_splitter = FileSplitter(telegram_max_file_size)
@@ -68,7 +53,6 @@ async def upload():
         "file_type": file_type,
         "tags": tags,
         "chunks": chunks_ids,
-        "thumbnail": thumbnail_message.id
     }
 
     await db["files"].insert_one(file_data)
@@ -107,6 +91,19 @@ async def clear():
     await db["files"].delete_many({})
     await telegram_client.delete_messages(config["telegram_channel"], await telegram_client.get_messages(config["telegram_channel"]))
     return "Cleared"
+
+
+@app.route('/files', methods=['GET'])
+async def files():
+    query = {}
+    tags = request.args.getlist('tags')
+    if tags:
+        query["tags"] = {"$all": tags}
+    files = []
+    async for file in db["files"].find(query):
+        file["_id"] = str(file["_id"])
+        files.append(file)
+    return jsonify(files)
 
 
 if __name__ == '__main__':
