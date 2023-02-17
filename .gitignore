@@ -1,3 +1,5 @@
 .idea
 *.session
 .env
+config.yml
+**.pyc
