@@ -3,3 +3,4 @@
 .env
 config.yml
 **.pyc
+session.session-journal

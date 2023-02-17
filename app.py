@@ -99,11 +99,71 @@ async def files():
     tags = request.args.getlist('tags')
     if tags:
         query["tags"] = {"$all": tags}
+
+    file_types = request.args.getlist('types')
+    if file_types:
+        query["file_type"] = {"$in": file_types}
+
     files = []
     async for file in db["files"].find(query):
         file["_id"] = str(file["_id"])
         files.append(file)
     return jsonify(files)
+
+
+@app.route('/files/<file_id>', methods=['DELETE'])
+async def delete_file(file_id):
+    file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
+    if file_data is None:
+        return "File not found", 404
+
+    chunks_ids = file_data["chunks"]
+    await telegram_client.delete_messages(config["telegram_channel"], chunks_ids)
+    await db["files"].delete_one({"_id": bson.ObjectId(file_id)})
+
+    return "Deleted"
+
+
+@app.route('/files/<file_id>', methods=['GET'])
+async def get_file(file_id):
+    file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
+    if file_data is None:
+        return "File not found", 404
+
+    file_data["_id"] = str(file_data["_id"])
+    return jsonify(file_data)
+
+
+@app.route('/files/<file_id>/tags', methods=['POST'])
+async def add_tags(file_id):
+    form_data = await request.form
+    tags = form_data.getlist('tags')
+
+    file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
+    if file_data is None:
+        return "File not found", 404
+
+    file_data["tags"] = list(set(file_data["tags"] + tags))
+    await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
+
+    file_data["_id"] = str(file_data["_id"])
+    return jsonify(file_data)
+
+
+@app.route('/files/<file_id>/tags', methods=['DELETE'])
+async def remove_tags(file_id):
+    form_data = await request.form
+    tags = form_data.getlist('tags')
+
+    file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
+    if file_data is None:
+        return "File not found", 404
+
+    file_data["tags"] = list(set(file_data["tags"]) - set(tags))
+    await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
+
+    file_data["_id"] = str(file_data["_id"])
+    return jsonify(file_data)
 
 
 if __name__ == '__main__':
