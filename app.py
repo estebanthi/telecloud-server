@@ -37,6 +37,10 @@ async def upload():
     file_size = int(form_data['size'])
     tags = form_data.getlist('tags')
 
+    file_exists = await db.files.find_one({"file_name": file_name, "file_type": file_type, "file_size": file_size})
+    if file_exists:
+        return jsonify({"error": "File already exists"}), 400
+
     chunks = [file]
     if file_size >= telegram_max_file_size:
         file_splitter = FileSplitter(telegram_max_file_size)
