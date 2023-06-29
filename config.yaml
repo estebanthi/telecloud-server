@@ -1,0 +1,6 @@
+telegram_api_id: 6858726
+telegram_api_hash: a8f16e9689cfe774afb7636424bc6933
+mongo_uri: mongodb+srv://estebanthilliez:D9NZMpyMums5ljWf@cluster0.tcfk8q6.mongodb.net/?retryWrites=true&w=majority
+telegram_chanel: TradingScripter
+
+db_name: telecloud

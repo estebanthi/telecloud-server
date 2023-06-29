@@ -1,0 +1,6 @@
+motor==3.2.0
+pymongo==4.4.0
+PyYAML==6.0
+PyYAML==6.0
+quart==0.18.4
+telethon==1.28.5

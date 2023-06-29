@@ -1,6 +1,6 @@
 .idea
 *.session
 .env
-config.yml
+config.yaml
 **.pyc
 session.session-journal

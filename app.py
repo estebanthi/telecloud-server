@@ -1,33 +1,26 @@
 from quart import Quart, request, send_file
-from telethon import TelegramClient, events, errors
 import os
 from json import dumps as jsonify
 import asyncio
-import yaml
-from motor.motor_asyncio import AsyncIOMotorClient
 import bson
 
-from file_splitter import FileSplitter
+from src.telegram import Telegram
+from src.database import Database
+from src.chunker import Chunker
 
 
-config = yaml.safe_load(open("config.yml", "r"))
+telegram = Telegram()
+db = Database().db
 
-telegram_api_id = config["telegram_api_id"]
-telegram_api_hash = config["telegram_api_hash"]
-
-telegram_client = TelegramClient("session", telegram_api_id, telegram_api_hash)
-telegram_client.start()
-telegram_max_file_size = int(1024 * 1024 * 1024 * 2)
-
-motor_client = AsyncIOMotorClient(config["mongo_uri"])
-db = motor_client["telecloud"]
+telegram_max_file_size = telegram.telegram_max_file_size
+chunker = Chunker(telegram_max_file_size)
 
 app = Quart(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024 * 2  * 10  # 20 GB
+app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024 * 2 * 10  # 20 GB
 
 
-@app.route('/upload', methods=['POST'])
-async def upload():
+@app.route('/files', methods=['POST'])
+async def post_files():
     files = await request.files
     file = files['file']
     file_name = file.filename
@@ -43,7 +36,7 @@ async def upload():
 
     chunks = [file]
     if file_size >= telegram_max_file_size:
-        file_splitter = FileSplitter(telegram_max_file_size)
+        file_splitter = Chunker(telegram_max_file_size)
         chunks = file_splitter.split(file)
 
     chunks_ids = []
@@ -82,7 +75,7 @@ async def download(file_id):
         chunk = open(file_path, "rb").read()
         chunks.append(chunk)
 
-    file = FileSplitter.join(chunks)
+    file = Chunker.join(chunks)
 
     for chunk_id in chunks_ids:
         os.remove(f"temp/{chunk_id}")

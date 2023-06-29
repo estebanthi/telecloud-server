@@ -1,14 +1,14 @@
 import io
 
 
-class FileSplitter:
-    def __init__(self, max_size):
-        self.max_size = max_size
+class Chunker:
+    def __init__(self, chunk_size):
+        self.chunk_size = chunk_size
 
     def split(self, file):
         chunks = []
         while True:
-            chunk = file.read(self.max_size)
+            chunk = file.read(self.chunk_size)
             if not chunk:
                 break
             chunks.append(chunk)
