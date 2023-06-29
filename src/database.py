@@ -13,3 +13,4 @@ class Database:
 
         db_name = config["db_name"]
         self.db = mongo_client[db_name]
+

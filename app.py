@@ -1,173 +1,191 @@
 from quart import Quart, request, send_file
 import os
 from json import dumps as jsonify
+import json
 import asyncio
 import bson
+from tqdm.auto import tqdm
 
 from src.telegram import Telegram
 from src.database import Database
 from src.chunker import Chunker
 
+import src.handlers.files as handlers_files
+
 
 telegram = Telegram()
 db = Database().db
 
-telegram_max_file_size = telegram.telegram_max_file_size
+telegram_max_file_size = telegram.max_file_size
 chunker = Chunker(telegram_max_file_size)
 
 app = Quart(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024 * 2 * 10  # 20 GB
 
 
+@app.route('/files/meta', methods=['GET'])
+async def get_files():
+    tags = request.args.getlist('tag')
+    file_types = request.args.getlist('type')
+    directory = request.args.get('directory')
+
+    response = await handlers_files.get_files(tags, file_types, directory, db)
+    return jsonify(response)
+
+
 @app.route('/files', methods=['POST'])
 async def post_files():
     files = await request.files
-    file = files['file']
-    file_name = file.filename
-
     form_data = await request.form
-    file_type = form_data['type']
-    file_size = int(form_data['size'])
-    tags = form_data.getlist('tags')
 
-    file_exists = await db.files.find_one({"file_name": file_name, "file_type": file_type, "file_size": file_size})
-    if file_exists:
-        return jsonify({"error": "File already exists"}), 400
+    responses = []
 
-    chunks = [file]
-    if file_size >= telegram_max_file_size:
-        file_splitter = Chunker(telegram_max_file_size)
-        chunks = file_splitter.split(file)
+    pbar = tqdm(total=len(files), unit="files", desc="Uploading files")
+    for file, file_data in zip(files.values(), form_data.getlist("data")):
+        file_data = json.loads(file_data.replace("'", '"'))
+        response = await handlers_files.upload_file(file, file_data, db, telegram, chunker)
+        responses.append(response)
+        pbar.update(1)
 
-    chunks_ids = []
-    for index, chunk in enumerate(chunks):
-        message = await telegram_client.send_file(config["telegram_channel"], chunk, caption=f"{file_name} - {index + 1}/{len(chunks)}")
-        chunks_ids.append(message.id)
-
-    file_data = {
-        "file_name": file_name,
-        "file_size": file_size,
-        "file_type": file_type,
-        "tags": tags,
-        "chunks": chunks_ids,
-    }
-
-    await db["files"].insert_one(file_data)
-
-    file_data["_id"] = str(file_data["_id"])
-    return jsonify(file_data)
+    return jsonify(responses)
 
 
-@app.route('/download/<file_id>', methods=['GET'])
-async def download(file_id):
-    file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
-    if file_data is None:
-        return "File not found", 404
+@app.route('/files', methods=['DELETE'])
+async def delete_files():
+    tags = request.args.getlist('tag')
+    file_types = request.args.getlist('type')
+    directory = request.args.get('directory')
 
-    chunks_ids = file_data["chunks"]
-    chunks = []
-    for chunk_id in chunks_ids:
-        message = await telegram_client.get_messages(config["telegram_channel"], ids=chunk_id)
-        if not os.path.exists("temp"):
-            os.mkdir("temp")
-        file_path = f"temp/{chunk_id}"
-        await message.download_media(file_path)
-        chunk = open(file_path, "rb").read()
-        chunks.append(chunk)
-
-    file = Chunker.join(chunks)
-
-    for chunk_id in chunks_ids:
-        os.remove(f"temp/{chunk_id}")
-
-    return await send_file(file, attachment_filename=file_data["file_name"], as_attachment=True)
+    file_ids = await handlers_files.get_files(tags, file_types, directory, db)
+    response = await handlers_files.delete_files(file_ids, db, telegram)
+    return jsonify(response)
 
 
-@app.route('/clear', methods=['GET'])
-async def clear():
-    await db["files"].delete_many({})
-    await telegram_client.delete_messages(config["telegram_channel"], await telegram_client.get_messages(config["telegram_channel"]))
-    return "Cleared"
+@app.route('/files/directory', methods=['PATCH'])
+async def patch_files_directory():
+    tags = request.args.getlist('tag')
+    file_types = request.args.getlist('type')
+    directory = request.args.get('directory')
+
+    form = await request.form
+    new_directory = form.get("new_directory")
+
+    file_ids = await handlers_files.get_files(tags, file_types, directory, db)
+    response = await handlers_files.patch_files(file_ids, db, new_directory=new_directory)
+    return jsonify(response)
+
+
+@app.route('/files/tags', methods=['DELETE'])
+async def delete_files_tags():
+    tags = request.args.getlist('tag')
+    file_types = request.args.getlist('type')
+    directory = request.args.get('directory')
+
+    form = await request.form
+    tags_to_delete = form.getlist("tags")
+
+    file_ids = await handlers_files.get_files(tags, file_types, directory, db)
+    response = await handlers_files.delete_files_tags(file_ids, db, tags_to_delete)
+    return jsonify(response)
+
+
+@app.route('/files/tags', methods=['POST'])
+async def post_files_tags():
+    tags = request.args.getlist('tag')
+    file_types = request.args.getlist('type')
+    directory = request.args.get('directory')
+
+    form = await request.form
+    new_tags = form.getlist("tags")
+
+    file_ids = await handlers_files.get_files(tags, file_types, directory, db)
+    response = await handlers_files.post_files_tags(file_ids, db, new_tags)
+    return jsonify(response)
+
+
+@app.route('/files/tags', methods=['PATCH'])
+async def patch_files_tags():
+    tags = request.args.getlist('tag')
+    file_types = request.args.getlist('type')
+    directory = request.args.get('directory')
+
+    form = await request.form
+    new_tags = form.getlist("tags")
+
+    file_ids = await handlers_files.get_files(tags, file_types, directory, db)
+    response = await handlers_files.patch_files(file_ids, db, new_tags=new_tags)
+    return jsonify(response)
 
 
 @app.route('/files', methods=['GET'])
-async def files():
-    query = {}
-    tags = request.args.getlist('tags')
-    if tags:
-        query["tags"] = {"$all": tags}
+async def download_files():
+    tags = request.args.getlist('tag')
+    file_types = request.args.getlist('type')
+    directory = request.args.get('directory')
 
-    file_types = request.args.getlist('types')
-    if file_types:
-        query["file_type"] = {"$in": file_types}
+    file_ids = await handlers_files.get_files(tags, file_types, directory, db)
 
-    files = []
-    async for file in db["files"].find(query):
-        file["_id"] = str(file["_id"])
-        files.append(file)
-    return jsonify(files)
+    responses = []
+    pbar = tqdm(total=len(file_ids), unit="files", desc="Downloading files")
+    for file_id in file_ids:
+        response = await handlers_files.download_file(file_id, db, telegram, chunker)
+        responses.append(response)
+        pbar.update(1)
+
+    return jsonify(responses)
+
+
+@app.route('/files/<file_id>/meta', methods=['GET'])
+async def get_file(file_id):
+    response = await handlers_files.get_file(file_id, db)
+    return jsonify(response)
 
 
 @app.route('/files/<file_id>', methods=['DELETE'])
 async def delete_file(file_id):
-    file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
-    if file_data is None:
-        return "File not found", 404
-
-    chunks_ids = file_data["chunks"]
-    await telegram_client.delete_messages(config["telegram_channel"], chunks_ids)
-    await db["files"].delete_one({"_id": bson.ObjectId(file_id)})
-
-    return "Deleted"
+    response = await handlers_files.delete_file(file_id, db, telegram)
+    return jsonify(response)
 
 
-@app.route('/files/<file_id>', methods=['GET'])
-async def get_file(file_id):
-    file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
-    if file_data is None:
-        return "File not found", 404
-
-    file_data["_id"] = str(file_data["_id"])
-    return jsonify(file_data)
-
-
-@app.route('/files/<file_id>/tags', methods=['POST'])
-async def add_tags(file_id):
-    form_data = await request.form
-    tags = form_data.getlist('tags')
-
-    file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
-    if file_data is None:
-        return "File not found", 404
-
-    file_data["tags"] = list(set(file_data["tags"] + tags))
-    await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
-
-    file_data["_id"] = str(file_data["_id"])
-    return jsonify(file_data)
+@app.route('/files/<file_id>/directory', methods=['PATCH'])
+async def patch_file_directory(file_id):
+    form = await request.form
+    new_directory = form.get("new_directory")
+    response = await handlers_files.patch_file(file_id, db, new_directory=new_directory)
+    return jsonify(response)
 
 
 @app.route('/files/<file_id>/tags', methods=['DELETE'])
-async def remove_tags(file_id):
-    form_data = await request.form
-    tags = form_data.getlist('tags')
+async def delete_file_tags(file_id):
+    form = await request.form
+    tags = form.getlist('tags')
+    response = await handlers_files.delete_file_tags(file_id, db, tags)
+    return jsonify(response)
 
-    file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
-    if file_data is None:
-        return "File not found", 404
 
-    file_data["tags"] = list(set(file_data["tags"]) - set(tags))
-    await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
+@app.route('/files/<file_id>/tags', methods=['POST'])
+async def post_file_tags(file_id):
+    form = await request.form
+    tags = form.getlist('tags')
+    response = await handlers_files.post_file_tags(file_id, db, tags)
+    return jsonify(response)
 
-    file_data["_id"] = str(file_data["_id"])
-    return jsonify(file_data)
 
-@app.route('/tags', methods=['GET'])
-async def get_tags():
-    tags = []
-    async for file in db["files"].find():
-        tags += file["tags"]
-    return jsonify(list(set(tags)))
+@app.route('/files/<file_id>/tags', methods=['PATCH'])
+async def patch_file_tags(file_id):
+    form = await request.form
+    new_tags = form.getlist("tags")
+    response = await handlers_files.patch_file(file_id, db, new_tags=new_tags)
+    return jsonify(response)
+
+
+@app.route('/files/<file_id>', methods=['GET'])
+async def download_file(file_id):
+    response = await handlers_files.download_file(file_id, db, telegram, chunker)
+    return jsonify(response)
+
+
+
 
 
 if __name__ == '__main__':

@@ -10,8 +10,8 @@ class Telegram:
         telegram_api_id = config["telegram_api_id"]
         telegram_api_hash = config["telegram_api_hash"]
 
-        self.telegram_client = TelegramClient("session", telegram_api_id, telegram_api_hash)
-        self.telegram_client.start()
+        self.client = TelegramClient("session", telegram_api_id, telegram_api_hash)
+        self.client.start()
 
-        self.telegram_max_file_size = int(1024 * 1024 * 1024 * 2) # 2 GB
+        self.max_file_size = int(1024 * 1024 * 1024 * 2) # 2 GB
         self.chanel_name = config["telegram_chanel"]
