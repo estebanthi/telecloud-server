@@ -9,7 +9,7 @@ global pbar
 global prev_curr
 
 
-async def get_files(tags, file_types, directory, db):
+async def get_files(tags, file_types, directories, db):
     query = {}
 
     if tags:
@@ -18,8 +18,9 @@ async def get_files(tags, file_types, directory, db):
     if file_types:
         query["file_type"] = {"$in": file_types}
 
-    if directory:
-        query["directory"] = bson.ObjectId(directory)
+    if directories:
+        query["$or"] = [{"directory": bson.ObjectId(directory)} for directory in directories]
+
 
     files = []
     async for file in db["files"].find(query):
@@ -40,8 +41,8 @@ async def upload_file(file, file_data, db, telegram, chunker):
 
     name = file.filename
 
-    if "type" not in file_data or "size" not in file_data:
-        return "File type and size must be provided", 400
+    if not validate_upload(file_data):
+        return f"Invalid file data for file {name}", 400
 
     type_ = file_data["type"]
     size = file_data["size"]
@@ -53,7 +54,6 @@ async def upload_file(file, file_data, db, telegram, chunker):
         return "File already exists", 400
 
     chunks = chunker.split(file) if size > telegram.max_file_size else [file]
-
     chunks_ids = []
 
     chunks_pbar = tqdm(total=len(chunks), unit="chunk", desc="Uploading chunks")
@@ -72,13 +72,17 @@ async def upload_file(file, file_data, db, telegram, chunker):
         "size": size,
         "type": type_,
         "tags": tags,
-        "directory": bson.ObjectId(directory),
+        "directory": bson.ObjectId(directory) if directory else None,
         "chunks": chunks_ids,
     }
 
     res = await db["files"].insert_one(file_data)
     file_data["_id"] = str(res.inserted_id)
-    return file_data
+    return utils.make_json_serializable(file_data), 200
+
+
+def validate_upload(file_data):
+    return "type" in file_data and "size" in file_data
 
 
 # tqdm bar

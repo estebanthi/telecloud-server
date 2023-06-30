@@ -1,4 +1,5 @@
 import bson
+import json
 
 
 def make_json_serializable(data):
@@ -10,3 +11,8 @@ def make_json_serializable(data):
         return str(data)
     else:
         return data
+
+
+def load_json_from_string(string):
+    string = string.replace("'", '"')
+    return json.loads(string)
