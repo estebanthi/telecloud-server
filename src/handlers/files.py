@@ -10,6 +10,15 @@ global prev_curr
 
 
 async def get_files(tags, file_types, directories, db):
+    query = get_files_query(tags, file_types, directories)
+
+    files = []
+    async for file in db["files"].find(query):
+        files.append(file["_id"])
+    return utils.make_json_serializable(files)
+
+
+def get_files_query(tags, file_types, directories):
     query = {}
 
     if tags:
@@ -21,12 +30,7 @@ async def get_files(tags, file_types, directories, db):
     if directories:
         query["$or"] = [{"directory": bson.ObjectId(directory)} for directory in directories]
 
-
-    files = []
-    async for file in db["files"].find(query):
-        _id = str(file["_id"])
-        files.append(_id)
-    return files
+    return query
 
 
 async def get_file(file_id, db):
@@ -109,7 +113,9 @@ async def delete_file(file_id, db, telegram):
 
     chunks_ids = file_data["chunks"]
     await telegram.client.delete_messages(telegram.chanel_name, chunks_ids)
-    return await db["files"].delete_one({"_id": bson.ObjectId(file_id)})
+
+    delete_result = await db["files"].delete_one({"_id": bson.ObjectId(file_id)})
+    return utils.make_json_serializable(file_data), 200
 
 
 async def delete_files_tags(file_ids, db, tags):
