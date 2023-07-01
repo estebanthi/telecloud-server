@@ -368,7 +368,11 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/File"
+                  type: string
+                example:
+                    - "123456789"
+                    - "987654321"
+                description: Updated files
           description: OK
   /files/meta/tags:
     summary: Interactions with files' tags
@@ -437,7 +441,11 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/File"
+                    type: string
+                example:
+                    - "123456789"
+                    - "987654321"
+                description: Updated files
           description: OK
     patch:
       summary: Delete some tags
@@ -504,7 +512,11 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/File"
+                    type: string
+                example:
+                    - "123456789"
+                    - "987654321"
+                description: Updated files
           description: OK
     delete:
       summary: Delete all tags
@@ -558,17 +570,19 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/File"
+                    type: string
+                example:
+                    - "123456789"
+                    - "987654321"
+                description: Updated files
           description: OK
   /files/meta/directory:
     summary: Interactions with files' directories
-    put:
-      summary: Replace files directory
+    delete:
+      summary: Delete files' directory
       description: >-
-        Replaces the directory of files according to the filter passed in
-        parameters.
-
-
+        Delete files' directory according to the filter passed in parameters.
+        
         **Note**: it is an `AND` filter.
       tags:
         - Files
@@ -609,29 +623,20 @@ paths:
             items:
               type: string
           allowEmptyValue: true
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                directory:
-                  type: string
-                  example: "123456789"
       responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                type: array
-                description: IDs of the modified files
-                items:
-                  type: string
-                example:
-                  - "123456789"
-                  - "987654321"
-          description: OK
+            "200":
+                content:
+                  application/json:
+                    schema:
+                      type: array
+                      description: IDs of the modified files
+                      items:
+                        type: string
+                      example:
+                        - "123456789"
+                        - "987654321"
+                description: OK
+
   "/files/{file_id}":
     summary: Interactions with the file system for individual files
     parameters:
@@ -717,9 +722,7 @@ paths:
           content:
             application/json:
               schema:
-                type: string
-                example: "123456789"
-                description: ID of the modified file
+                $ref: "#/components/schemas/File"
           description: OK
   "/files/{file_id}/meta/tags":
     summary: Interactions with files' tags
@@ -753,9 +756,7 @@ paths:
           content:
             application/json:
               schema:
-                type: string
-                description: IDs of the modified file
-                example: "123456789"
+                $ref: "#/components/schemas/File"
           description: OK
     patch:
       summary: Delete some tags
@@ -780,9 +781,7 @@ paths:
           content:
             application/json:
               schema:
-                type: string
-                description: IDs of the modified file
-                example: "123456789"
+                $ref: "#/components/schemas/File"
           description: OK
     delete:
       summary: Delete all tags
@@ -794,9 +793,7 @@ paths:
           content:
             application/json:
               schema:
-                type: string
-                description: IDs of the modified file
-                example: "123456789"
+                $ref: "#/components/schemas/File"
           description: OK
   "/files/{file_id}/meta/directory":
     summary: Interactions with file directory
@@ -807,31 +804,18 @@ paths:
           type: string
           example: "123456789"
         required: true
-    put:
-      summary: Replace file directory
-      description: Replaces the directory of the given file with the directory in
-        parameters.
-      tags:
-        - Files
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                directory:
-                  type: string
-                  example: "123456789"
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                type: string
-                description: ID of the modified file
-                example: "123456789"
-          description: OK
+    delete:
+        summary: Delete file directory
+        description: Delete the directory of the given file.
+        tags:
+            - Files
+        responses:
+            "200":
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/File"
+              description: OK
   /directories:
     summary: Interactions with directories
     get:

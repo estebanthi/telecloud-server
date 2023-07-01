@@ -139,18 +139,15 @@ async def delete_all_tags_in_files():
     return jsonify(response)
 
 
-@app.route('/files/meta/directory', methods=['PUT'])
-async def replace_files_directory():
+@app.route('/files/meta/directory', methods=['DELETE'])
+async def delete_files_directory():
     tags = request.args.getlist('tags')
     file_types = request.args.getlist('types')
     directory = request.args.get('directories')
 
-    form = await request.form
-    new_directory = form.get("directory")
-
     files = await handlers_files.get_files(tags, file_types, directory, db)
     file_ids = [file["_id"] for file in files]
-    response = await handlers_files.patch_files(file_ids, db, new_directory=new_directory)
+    response = await handlers_files.patch_files(file_ids, db, new_directory=None)
     return jsonify(response)
 
 
