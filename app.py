@@ -143,7 +143,7 @@ async def delete_files_directory():
 
     files, code = await handlers_files.get_files(tags, file_types, directories, db)
     file_ids = [file["_id"] for file in files]
-    return await handlers_files.patch_files(file_ids, db, new_directory=None)
+    return await handlers_files.delete_files_directory(file_ids, db)
 
 
 @app.route('/files/<file_id>', methods=['GET'])
@@ -163,6 +163,41 @@ async def delete_file(file_id):
 @app.route('/files/<file_id>/meta', methods=['GET'])
 async def get_file(file_id):
     return await handlers_files.get_file(file_id, db)
+
+
+@app.route('/files/<file_id>/meta', methods=['PATCH'])
+async def patch_file(file_id):
+    form = await request.form
+    new_tags = form.getlist("tags")
+    new_directory = form.get("directory")
+
+    return await handlers_files.patch_file(file_id, db, new_tags=new_tags, new_directory=new_directory)
+
+
+@app.route('/files/<file_id>/meta/tags', methods=['POST'])
+async def add_tags_to_file(file_id):
+    form = await request.form
+    tags_to_add = form.getlist("tags")
+
+    return await handlers_files.add_tags_to_file(file_id, db, tags_to_add)
+
+
+@app.route('/files/<file_id>/meta/tags', methods=['PATCH'])
+async def remove_tags_in_file(file_id):
+    form = await request.form
+    tags_to_remove = form.getlist("tags")
+
+    return await handlers_files.remove_tags_from_file(file_id, db, tags_to_remove)
+
+
+@app.route('/files/<file_id>/meta/tags', methods=['DELETE'])
+async def delete_all_tags_in_file(file_id):
+    return await handlers_files.delete_all_tags_from_file(file_id, db)
+
+
+@app.route('/files/<file_id>/meta/directory', methods=['DELETE'])
+async def delete_file_directory(file_id):
+    return await handlers_files.delete_file_directory(file_id, db)
 
 
 if __name__ == '__main__':

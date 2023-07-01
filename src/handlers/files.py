@@ -98,6 +98,7 @@ async def patch_file(file_id, db, new_directory=None, new_tags=None):
     if file_data is None:
         return "File not found", 404
 
+    print(new_directory)
     file_data["directory"] = new_directory or file_data["directory"]
     file_data["tags"] = new_tags or file_data["tags"]
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
@@ -213,6 +214,27 @@ async def delete_all_tags_from_file(file_id, db):
     return file_id, 200
 
 
+async def delete_files_directory(file_ids, db):
+    responses = []
+
+    for file_id in file_ids:
+        response = await delete_file_directory(file_id, db)
+        responses.append(response)
+
+    ids = [response[0] for response in responses if response[1] == 200]
+    return ids, 200 if len(ids) > 0 else 404
+
+
+async def delete_file_directory(file_id, db):
+    file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
+    if file_data is None:
+        return "File not found", 404
+
+    file_data["directory"] = None
+    await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
+    return file_id, 200
+
+
 async def upload_files(files, files_data, db, telegram, chunker):
     responses = []
 
@@ -289,7 +311,8 @@ async def download_files(file_ids, db, telegram, chunker):
         bar.update(1)
     bar.close()
 
-    return await send_files(files), 200
+    files = [file[0] for file in files if file is not None]
+    return await send_files(files)
 
 
 async def download_file(file_id, db, telegram, chunker):
