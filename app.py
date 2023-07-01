@@ -1,4 +1,4 @@
-from quart import Quart, request
+from quart import Quart, request, after_this_request
 from json import dumps as jsonify
 import json
 import asyncio
@@ -20,6 +20,8 @@ db = Database().db
 telegram_max_file_size = telegram.max_file_size
 chunker = Chunker(telegram_max_file_size)
 
+utils.clear_temp_folder()
+
 app = Quart(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024 * 2 * 10  # 20 GB
 
@@ -29,18 +31,28 @@ app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024 * 2 * 10  # 20 GB
 async def download_files():
     tags = request.args.getlist('tags')
     file_types = request.args.getlist('types')
-    directories = request.args.get('directories')
+    directories = request.args.getlist('directories')
 
-    file_ids = await handlers_files.get_files(tags, file_types, directories, db)
+    files= await handlers_files.get_files(tags, file_types, directories, db)
+    file_ids = [file["_id"] for file in files]
 
-    responses = []
+    files = []
     pbar = tqdm(total=len(file_ids), unit="files", desc="Downloading files")
     for file_id in file_ids:
-        response = await handlers_files.download_file(file_id, db, telegram, chunker)
-        responses.append(response)
+        file = await handlers_files.download_file(file_id, db, telegram, chunker)
+        files.append(file)
         pbar.update(1)
 
-    return jsonify(responses)
+    @after_this_request
+    def clear_temp_folder(response):
+        utils.clear_temp_folder()
+        return response
+
+
+    return await handlers_files.send_files(files)
+
+
+
 
 
 @app.route('/files', methods=['POST'])
@@ -62,6 +74,28 @@ async def upload_files():
     return jsonify(responses)
 
 
+@app.route('/files', methods=['DELETE'])
+async def delete_files():
+    tags = request.args.getlist('tags')
+    file_types = request.args.getlist('types')
+    directories = request.args.getlist('directories')
+
+    files = await handlers_files.get_files(tags, file_types, directories, db)
+    file_ids = [file["_id"] for file in files]
+    response = await handlers_files.delete_files(file_ids, db, telegram)
+    return jsonify(response)
+
+
+@app.route('/files/id', methods=['GET'])
+async def get_files_ids():
+    tags = request.args.getlist('tags')
+    file_types = request.args.getlist('types')
+    directories = request.args.getlist('directories')
+
+    files = await handlers_files.get_files(tags, file_types, directories, db)
+    file_ids = [file["_id"] for file in files]
+    return jsonify(file_ids)
+
 
 @app.route('/files/meta', methods=['GET'])
 async def get_files():
@@ -73,15 +107,64 @@ async def get_files():
     return jsonify(response)
 
 
-@app.route('/files', methods=['DELETE'])
-async def delete_files():
-    tags = request.args.getlist('tag')
-    file_types = request.args.getlist('type')
-    directory = request.args.get('directory')
+@app.route('/files/meta', methods=['PATCH'])
+async def patch_files():
+    tags = request.args.getlist('tags')
+    file_types = request.args.getlist('types')
+    directory = request.args.get('directories')
 
-    file_ids = await handlers_files.get_files(tags, file_types, directory, db)
-    response = await handlers_files.delete_files(file_ids, db, telegram)
+    form = await request.form
+    new_tags = form.getlist("tags")
+    new_directory = form.get("directory")
+
+    files = await handlers_files.get_files(tags, file_types, directory, db)
+    file_ids = [file["_id"] for file in files]
+    response = await handlers_files.patch_files(file_ids, db, new_tags=new_tags, new_directory=new_directory)
     return jsonify(response)
+
+
+@app.route('/files/meta/tags', methods=['POST'])
+async def add_tags_to_files():
+    tags = request.args.getlist('tags')
+    file_types = request.args.getlist('types')
+    directory = request.args.get('directories')
+
+    form = await request.form
+    tags_to_add = form.getlist("tags")
+
+    files = await handlers_files.get_files(tags, file_types, directory, db)
+    file_ids = [file["_id"] for file in files]
+    response = await handlers_files.add_tags_to_files(file_ids, db, tags_to_add)
+    return jsonify(response)
+
+
+@app.route('/files/meta/tags', methods=['PATCH'])
+async def remove_tags_in_files():
+    tags = request.args.getlist('tags')
+    file_types = request.args.getlist('types')
+    directory = request.args.get('directories')
+
+    form = await request.form
+    tags_to_remove = form.getlist("tags")
+
+    files = await handlers_files.get_files(tags, file_types, directory, db)
+    file_ids = [file["_id"] for file in files]
+    response = await handlers_files.remove_tags_from_files(file_ids, db, tags_to_remove)
+    return jsonify(response)
+
+
+@app.route('/files/meta/tags', methods=['DELETE'])
+async def delete_all_tags_in_files():
+    tags = request.args.getlist('tags')
+    file_types = request.args.getlist('types')
+    directory = request.args.get('directories')
+
+    files = await handlers_files.get_files(tags, file_types, directory, db)
+    file_ids = [file["_id"] for file in files]
+    response = await handlers_files.delete_all_tags_from_files(file_ids, db)
+    return jsonify(response)
+
+
 
 
 @app.route('/files/directory', methods=['PATCH'])

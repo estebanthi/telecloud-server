@@ -18,6 +18,7 @@ class Chunker:
     def join(chunks):
         file = io.BytesIO()
         for chunk in chunks:
-            file.write(chunk)
+            with open(chunk, "rb") as f:
+                file.write(f.read())
         file.seek(0)
-        return file
+        return file.read()

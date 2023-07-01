@@ -1,5 +1,7 @@
 import bson
 import json
+import datetime as dt
+import shutil
 
 
 def make_json_serializable(data):
@@ -9,6 +11,8 @@ def make_json_serializable(data):
         return {key: make_json_serializable(value) for key, value in data.items()}
     elif isinstance(data, bson.ObjectId):
         return str(data)
+    elif isinstance(data, dt.datetime):
+        return data.isoformat()
     else:
         return data
 
@@ -16,3 +20,10 @@ def make_json_serializable(data):
 def load_json_from_string(string):
     string = string.replace("'", '"')
     return json.loads(string)
+
+
+def clear_temp_folder():
+    path = "temp"
+    if shutil.os.path.exists(path):
+        shutil.rmtree(path)
+    shutil.os.mkdir(path)

@@ -1,0 +1,1414 @@
+---
+openapi: 3.0.0
+info:
+  title: Telecloud Server
+  version: "1.0"
+  description: Telecloud Server provides an API to turn a Telegram chanel into a
+    flexible file system using folders and tags.
+  termsOfService: ""
+  contact:
+    name: estebanthi
+    email: contact@esteban-thilliez.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  x-logo:
+    url: ""
+servers:
+  - url: https://api.example.io
+paths:
+  /files:
+    summary: Interactions with the file system
+    get:
+      summary: Download files
+      description: |-
+        Downloads the files according to the filter passed in parameters.
+
+        **Note**: it is an `AND` filter.
+      tags:
+        - Files
+      parameters:
+        - name: tags
+          description: Tags associated with the files
+          example:
+            - pictures
+            - cars
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: types
+          description: Types of the files
+          example:
+            - jpeg
+            - png
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: directories
+          description: Directories ID of the files
+          in: query
+          required: false
+          example:
+            - "123456789"
+            - "987654321"
+          schema:
+            type: array
+            items:
+              type: string
+          allowEmptyValue: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - "123456789"
+                  - "987654321"
+          description: OK
+    post:
+      summary: Upload files
+      description: Uploads the files passed in parameters
+      tags:
+        - Files
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Files to upload
+                  example:
+                    - file1
+                    - file2
+                data:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        description: Type of the file
+                        example: jpeg
+                      size:
+                        type: integer
+                        description: Size of the file
+                        example: 123456
+                      created_at:
+                        type: string
+                        format: date-time
+                        description: Creation date of the file
+                        example: 2020-01-01T00:00:00Z
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - "123456789"
+                  - "987654321"
+                description: IDs of the uploaded files
+          description: OK
+    delete:
+      summary: Delete files
+      description: |-
+        Delete the files according to the filter passed in parameters.
+
+        **Note**: it is an `AND` filter.
+      tags:
+        - Files
+      parameters:
+        - name: tags
+          description: Tags associated with the files
+          example:
+            - pictures
+            - cars
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: types
+          description: Types of the files
+          example:
+            - jpeg
+            - png
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: directories
+          description: Directories ID of the files
+          in: query
+          required: false
+          example:
+            - "123456789"
+            - "987654321"
+          schema:
+            type: array
+            items:
+              type: string
+          allowEmptyValue: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/File"
+                description: Deleted files
+          description: OK
+  /files/id:
+    summary: Interactions with files' IDs
+    get:
+      summary: Get files IDs
+      description: |-
+        Get the files IDs according to the filter passed in parameters.
+
+        **Note**: it is an `AND` filter.
+      tags:
+        - Files
+      parameters:
+        - name: tags
+          description: Tags associated with the files
+          example:
+            - pictures
+            - cars
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: types
+          description: Types of the files
+          example:
+            - jpeg
+            - png
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: directories
+          description: Directories ID of the files
+          in: query
+          required: false
+          example:
+            - "123456789"
+            - "987654321"
+          schema:
+            type: array
+            items:
+              type: string
+          allowEmptyValue: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - "123456789"
+                  - "987654321"
+          description: OK
+  /files/meta:
+    summary: Interactions with files' representation
+    get:
+      summary: Get files meta
+      description: |-
+        Get the files meta according to the filter passed in parameters.
+
+        **Note**: it is an `AND` filter.
+      tags:
+        - Files
+      parameters:
+        - name: tags
+          description: Tags associated with the files
+          example:
+            - pictures
+            - cars
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: types
+          description: Types of the files
+          example:
+            - jpeg
+            - png
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: directories
+          description: Directories ID of the files
+          in: query
+          required: false
+          example:
+            - "123456789"
+            - "987654321"
+          schema:
+            type: array
+            items:
+              type: string
+          allowEmptyValue: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/File"
+          description: OK
+    patch:
+      summary: Update files meta
+      description: >-
+        Update the files' representation according to the filter passed in
+        parameters.
+
+
+        **Note**: it is an `AND` filter.
+      tags:
+        - Files
+      parameters:
+        - name: tags
+          description: Tags associated with the files
+          example:
+            - pictures
+            - cars
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: types
+          description: Types of the files
+          example:
+            - jpeg
+            - png
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: directories
+          description: Directories ID of the files
+          in: query
+          required: false
+          example:
+            - "123456789"
+            - "987654321"
+          schema:
+            type: array
+            items:
+              type: string
+          allowEmptyValue: true
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  example:
+                    - pictures
+                    - cars
+                  items:
+                    type: string
+                directory:
+                  type: string
+                  example: "123456789"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/File"
+          description: OK
+  /files/meta/tags:
+    summary: Interactions with files' tags
+    post:
+      summary: Add tags
+      description: |-
+        Add tags to files according to the filter passed in parameters.
+
+        **Note**: it is an `AND` filter.
+      tags:
+        - Files
+      parameters:
+        - name: tags
+          description: Tags associated with the files
+          example:
+            - pictures
+            - cars
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: types
+          description: Types of the files
+          example:
+            - jpeg
+            - png
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: directories
+          description: Directories ID of the files
+          in: query
+          required: false
+          example:
+            - "123456789"
+            - "987654321"
+          schema:
+            type: array
+            items:
+              type: string
+          allowEmptyValue: true
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  example:
+                    - "2023"
+                  items:
+                    type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/File"
+          description: OK
+    patch:
+      summary: Delete some tags
+      description: |-
+        Remove given tags in files according to the filter passed in parameters.
+
+        **Note**: it is an `AND` filter.
+      tags:
+        - Files
+      parameters:
+        - name: tags
+          description: Tags associated with the files
+          example:
+            - pictures
+            - cars
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: types
+          description: Types of the files
+          example:
+            - jpeg
+            - png
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: directories
+          description: Directories ID of the files
+          in: query
+          required: false
+          example:
+            - "123456789"
+            - "987654321"
+          schema:
+            type: array
+            items:
+              type: string
+          allowEmptyValue: true
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  example:
+                    - cars
+                  items:
+                    type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/File"
+          description: OK
+    delete:
+      summary: Delete all tags
+      description: |-
+        Delete files' tags according to the filter passed in parameters.
+
+        **Note**: it is an `AND` filter.
+      tags:
+        - Files
+      parameters:
+        - name: tags
+          description: Tags associated with the files
+          example:
+            - pictures
+            - cars
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: types
+          description: Types of the files
+          example:
+            - jpeg
+            - png
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: directories
+          description: Directories ID of the files
+          in: query
+          required: false
+          example:
+            - "123456789"
+            - "987654321"
+          schema:
+            type: array
+            items:
+              type: string
+          allowEmptyValue: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/File"
+          description: OK
+  /files/meta/directory:
+    summary: Interactions with files' directories
+    put:
+      summary: Replace files directory
+      description: >-
+        Replaces the directory of files according to the filter passed in
+        parameters.
+
+
+        **Note**: it is an `AND` filter.
+      tags:
+        - Files
+      parameters:
+        - name: tags
+          description: Tags associated with the files
+          example:
+            - pictures
+            - cars
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: types
+          description: Types of the files
+          example:
+            - jpeg
+            - png
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+          allowEmptyValue: true
+        - name: directories
+          description: Directories ID of the files
+          in: query
+          required: false
+          example:
+            - "123456789"
+            - "987654321"
+          schema:
+            type: array
+            items:
+              type: string
+          allowEmptyValue: true
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                directory:
+                  type: string
+                  example: "123456789"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                description: IDs of the modified files
+                items:
+                  type: string
+                example:
+                  - "123456789"
+                  - "987654321"
+          description: OK
+  "/files/{file_id}":
+    summary: Interactions with the file system for individual files
+    parameters:
+      - name: file_id
+        in: path
+        schema:
+          type: string
+          example: "123456789"
+        required: true
+    get:
+      summary: Download file
+      description: Downloads the given file.
+      tags:
+        - Files
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "123456789"
+                description: ID of the downloaded file
+          description: OK
+    delete:
+      summary: Delete file
+      description: Delete the given file
+      tags:
+        - Files
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "123456789"
+                description: ID of the deleted file
+          description: OK
+  "/files/{file_id}/meta":
+    summary: Interactions with individual files' representation
+    parameters:
+      - name: file_id
+        in: path
+        schema:
+          type: string
+          example: "123456789"
+        required: true
+    get:
+      summary: Get file meta
+      description: Get the metadata of the given file.
+      tags:
+        - Files
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/File"
+          description: OK
+    patch:
+      summary: Update file meta
+      description: Update the file representation.
+      tags:
+        - Files
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  example:
+                    - pictures
+                    - cars
+                  items:
+                    type: string
+                directory:
+                  type: string
+                  example: "123456789"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "123456789"
+                description: ID of the modified file
+          description: OK
+  "/files/{file_id}/meta/tags":
+    summary: Interactions with files' tags
+    parameters:
+      - name: file_id
+        in: path
+        schema:
+          type: string
+          example: "123456789"
+        required: true
+    post:
+      summary: Add tags
+      description: Add tags to the given file.
+      tags:
+        - Files
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  example:
+                    - "2023"
+                  items:
+                    type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+                description: IDs of the modified file
+                example: "123456789"
+          description: OK
+    patch:
+      summary: Delete some tags
+      description: Remove given tags for the given file.
+      tags:
+        - Files
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  example:
+                    - cars
+                  items:
+                    type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+                description: IDs of the modified file
+                example: "123456789"
+          description: OK
+    delete:
+      summary: Delete all tags
+      description: Delete all tags of the given file.
+      tags:
+        - Files
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+                description: IDs of the modified file
+                example: "123456789"
+          description: OK
+  "/files/{file_id}/meta/directory":
+    summary: Interactions with file directory
+    parameters:
+      - name: file_id
+        in: path
+        schema:
+          type: string
+          example: "123456789"
+        required: true
+    put:
+      summary: Replace file directory
+      description: Replaces the directory of the given file with the directory in
+        parameters.
+      tags:
+        - Files
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                directory:
+                  type: string
+                  example: "123456789"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+                description: ID of the modified file
+                example: "123456789"
+          description: OK
+  /directories:
+    summary: Interactions with directories
+    get:
+      summary: Download directories
+      description: Downloads the directories according to the filter passed in parameters.
+      tags:
+        - Directories
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+            example: pictures
+          required: false
+        - name: parent
+          in: query
+          schema:
+            type: string
+            example: "123456789"
+          required: false
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - "123456789"
+                  - "987654321"
+          description: OK
+    post:
+      summary: Create directory
+      description: Create a directory.
+      tags:
+        - Directories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: pictures
+
+                parent:
+                  type: string
+                  example: "123456789"
+
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: string
+                description: ID of the created directory
+                example: "123456789"
+          description: OK
+    delete:
+      summary: Delete directories
+      description: Delete the directories according to the filter passed in parameters.
+      tags:
+        - Directories
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+            example: pictures
+          required: false
+        - name: parent
+          in: query
+          schema:
+            type: string
+            example: "123456789"
+          required: false
+        - name: recursive
+          in: query
+          schema:
+            type: boolean
+            example: true
+          required: false
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - "123456789"
+                  - "987654321"
+          description: OK
+  /directories/meta:
+    summary: Interactions with directories' representation
+    get:
+      summary: Get directories meta
+      description: Get the metadata of the directories according to the filter passed
+        in parameters.
+      tags:
+        - Directories
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+            example: pictures
+          required: false
+        - name: parent
+          in: query
+          schema:
+            type: string
+            example: "123456789"
+          required: false
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Directory"
+          description: OK
+    patch:
+      summary: Update directories meta
+      description: Update the directories representation according to the filter
+        passed in parameters.
+      tags:
+        - Directories
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+            example: pictures
+          required: false
+        - name: parent
+          in: query
+          schema:
+            type: string
+            example: "123456789"
+          required: false
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: pictures
+                parent:
+                  type: string
+                  example: "123456789"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - "123456789"
+                  - "987654321"
+                description: IDs of the modified directories
+          description: OK
+  "/directories/{directory_id}":
+    summary: Interactions with a single directory
+    parameters:
+      - name: directory_id
+        in: path
+        schema:
+          type: string
+          example: "123456789"
+        required: true
+    get:
+      summary: Download directory
+      description: Downloads the given directory.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+                description: ID of the downloaded directory
+                example: "123456789"
+          description: OK
+      tags:
+        - Directories
+    delete:
+      summary: Delete directory
+      description: Delete the given directory.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+                description: ID of the deleted directory
+                example: "123456789"
+          description: OK
+      tags:
+        - Directories
+  "/directories/{directory_id}/meta":
+    summary: Interactions with a single directory's representation
+    parameters:
+      - name: directory_id
+        in: path
+        schema:
+          type: string
+          example: "123456789"
+        required: true
+    get:
+      summary: Get directory meta
+      description: Get the metadata of the given directory.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Directory"
+          description: OK
+      tags:
+        - Directories
+    patch:
+      summary: Update directory meta
+      description: Update the directory representation.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: pictures
+                parent:
+                  type: string
+                  example: "123456789"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+                description: ID of the modified directory
+                example: "123456789"
+          description: OK
+      tags:
+        - Directories
+  "/directories/{directory_id}/meta/children":
+    summary: Interactions with a single directory's children
+    parameters:
+      - name: directory_id
+        in: path
+        schema:
+          type: string
+          example: "123456789"
+        required: true
+    get:
+      summary: Get directory children
+      description: Get the children of the given directory.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - "123456789"
+                  - "987654321"
+                description: IDs of the children
+          description: OK
+      tags:
+        - Directories
+    put:
+      summary: Remove directory children
+      description: Remove the children of the given directory without deleting them.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - "123456789"
+                  - "987654321"
+                description: IDs of the removed children
+          description: OK
+      tags:
+        - Directories
+  /tags:
+    summary: Interactions with tags
+    get:
+      summary: Get tags
+      description: Get tags according to the filter passed in parameters.
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+            example: pictures
+          required: false
+        - name: parent
+          in: query
+          schema:
+            type: string
+            example: "123456789"
+          required: false
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - "123456789"
+                  - "987654321"
+                description: IDs of the tags
+          description: OK
+      tags:
+        - Tags
+    post:
+      summary: Create tag
+      description: Creates a tag.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: pictures
+                parent:
+                  type: string
+                  example: "123456789"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+                description: ID of the created tag
+                example: "123456789"
+          description: OK
+      tags:
+        - Tags
+    delete:
+      summary: Delete tags
+      description: Deletes tags according to the filter passed in parameters.
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+            example: pictures
+          required: false
+        - name: parent
+          in: query
+          schema:
+            type: string
+            example: "123456789"
+          required: false
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - "123456789"
+                  - "987654321"
+                description: IDs of the deleted tags
+          description: OK
+      tags:
+        - Tags
+  "/tags/{tag_id}":
+    summary: Interactions with a single tag
+    parameters:
+      - name: tag_id
+        in: path
+        schema:
+          type: string
+          example: "123456789"
+        required: true
+    get:
+      summary: Get tag
+      description: Get the given tag.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+          description: OK
+      tags:
+        - Tags
+    patch:
+      summary: Update tag
+      description: Updates the given tag.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: pictures
+                parent:
+                  type: string
+                  example: "123456789"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+                description: ID of the modified tag
+                example: "123456789"
+          description: OK
+      tags:
+        - Tags
+    delete:
+      summary: Delete tag
+      description: Deletes the given tag.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+                description: ID of the deleted tag
+                example: "123456789"
+          description: OK
+      tags:
+        - Tags
+  "/tags/{tag_id}/children":
+    summary: Interactions with a single tag's children
+    parameters:
+      - name: tag_id
+        in: path
+        schema:
+          type: string
+          example: "123456789"
+        required: true
+    get:
+      summary: Get tag children
+      description: Get the children of the given tag.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - "123456789"
+                  - "987654321"
+                description: IDs of the children
+          description: OK
+      tags:
+        - Tags
+    put:
+      summary: Remove tag children
+      description: Remove the children of the given tag without deleting them.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - "123456789"
+                  - "987654321"
+                description: IDs of the removed children
+          description: OK
+      tags:
+        - Tags
+tags:
+  - name: Files
+  - name: Directories
+  - name: Tags
+components:
+  schemas:
+    File:
+      type: object
+      required:
+        - _id
+        - name
+        - size
+        - extension
+      properties:
+        _id:
+          type: string
+          example: "123456789"
+        name:
+          type: string
+          example: My file
+        size:
+          type: integer
+          example: 34567
+        extension:
+          type: string
+          example: pdf
+        directory:
+          type: string
+          example: "123456789"
+        tags:
+          type: array
+          items:
+            type: string
+          example:
+            - pictures
+            - cars
+        created_at:
+          type: string
+          example: ""
+        uploaded_at:
+          type: string
+          example: ""
+        chunks:
+          type: array
+          items:
+            type: string
+          example:
+            - "123456789"
+            - "987654321"
+          description: Chunks composing the file
+    Directory:
+      type: object
+      required:
+        - _id
+        - name
+      properties:
+        _id:
+          type: string
+          example: "123456789"
+        name:
+          type: string
+          example: My directory
+        parent:
+          type: string
+          example: "123456789"
+    Tag:
+      type: object
+      required:
+        - _id
+        - name
+      properties:
+        _id:
+          type: string
+          example: "123456789"
+        name:
+          type: string
+          example: My tag
+        parent:
+          type: string
+          example: "123456789"
