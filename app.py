@@ -32,8 +32,9 @@ async def download_files():
     file_types = request.args.getlist('types')
     directories = request.args.getlist('directories')
 
-    files= await handlers_files.get_files(tags, file_types, directories, db)
+    files, code = await handlers_files.get_files(tags, file_types, directories, db)
     file_ids = [file["_id"] for file in files]
+
     return await handlers_files.download_files(file_ids, db, telegram, chunker)
 
 
@@ -54,11 +55,10 @@ async def delete_files():
     file_types = request.args.getlist('types')
     directories = request.args.getlist('directories')
 
-    files = await handlers_files.get_files(tags, file_types, directories, db)
+    files, code = await handlers_files.get_files(tags, file_types, directories, db)
     file_ids = [file["_id"] for file in files]
-    response = await handlers_files.delete_files(file_ids, db, telegram)
-    return jsonify(response)
 
+    return await handlers_files.delete_files(file_ids, db, telegram)
 
 @app.route('/files/id', methods=['GET'])
 async def get_files_ids():
@@ -66,90 +66,103 @@ async def get_files_ids():
     file_types = request.args.getlist('types')
     directories = request.args.getlist('directories')
 
-    files = await handlers_files.get_files(tags, file_types, directories, db)
+    files, code = await handlers_files.get_files(tags, file_types, directories, db)
     file_ids = [file["_id"] for file in files]
-    return jsonify(file_ids)
+
+    return file_ids, 200
 
 
 @app.route('/files/meta', methods=['GET'])
 async def get_files():
     tags = request.args.getlist('tag')
     file_types = request.args.getlist('type')
-    directory = request.args.get('directory')
+    directories = request.args.get('directories')
 
-    response = await handlers_files.get_files(tags, file_types, directory, db)
-    return jsonify(response)
+    return await handlers_files.get_files(tags, file_types, directories, db)
 
 
 @app.route('/files/meta', methods=['PATCH'])
 async def patch_files():
     tags = request.args.getlist('tags')
     file_types = request.args.getlist('types')
-    directory = request.args.get('directories')
+    directories = request.args.get('directories')
 
     form = await request.form
     new_tags = form.getlist("tags")
     new_directory = form.get("directory")
 
-    files = await handlers_files.get_files(tags, file_types, directory, db)
+    files, code = await handlers_files.get_files(tags, file_types, directories, db)
     file_ids = [file["_id"] for file in files]
-    response = await handlers_files.patch_files(file_ids, db, new_tags=new_tags, new_directory=new_directory)
-    return jsonify(response)
+    return await handlers_files.patch_files(file_ids, db, new_tags=new_tags, new_directory=new_directory)
 
 
 @app.route('/files/meta/tags', methods=['POST'])
 async def add_tags_to_files():
     tags = request.args.getlist('tags')
     file_types = request.args.getlist('types')
-    directory = request.args.get('directories')
+    directories = request.args.get('directories')
 
     form = await request.form
     tags_to_add = form.getlist("tags")
 
-    files = await handlers_files.get_files(tags, file_types, directory, db)
+    files, code = await handlers_files.get_files(tags, file_types, directories, db)
     file_ids = [file["_id"] for file in files]
-    response = await handlers_files.add_tags_to_files(file_ids, db, tags_to_add)
-    return jsonify(response)
+    return await handlers_files.add_tags_to_files(file_ids, db, tags_to_add)
 
 
 @app.route('/files/meta/tags', methods=['PATCH'])
 async def remove_tags_in_files():
     tags = request.args.getlist('tags')
     file_types = request.args.getlist('types')
-    directory = request.args.get('directories')
+    directories = request.args.get('directories')
 
     form = await request.form
     tags_to_remove = form.getlist("tags")
 
-    files = await handlers_files.get_files(tags, file_types, directory, db)
+    files, code = await handlers_files.get_files(tags, file_types, directories, db)
     file_ids = [file["_id"] for file in files]
-    response = await handlers_files.remove_tags_from_files(file_ids, db, tags_to_remove)
-    return jsonify(response)
+    return await handlers_files.remove_tags_from_files(file_ids, db, tags_to_remove)
 
 
 @app.route('/files/meta/tags', methods=['DELETE'])
 async def delete_all_tags_in_files():
     tags = request.args.getlist('tags')
     file_types = request.args.getlist('types')
-    directory = request.args.get('directories')
+    directories = request.args.get('directories')
 
-    files = await handlers_files.get_files(tags, file_types, directory, db)
+    files, code = await handlers_files.get_files(tags, file_types, directories, db)
     file_ids = [file["_id"] for file in files]
-    response = await handlers_files.delete_all_tags_from_files(file_ids, db)
-    return jsonify(response)
+    return await handlers_files.delete_all_tags_from_files(file_ids, db)
 
 
 @app.route('/files/meta/directory', methods=['DELETE'])
 async def delete_files_directory():
     tags = request.args.getlist('tags')
     file_types = request.args.getlist('types')
-    directory = request.args.get('directories')
+    directories = request.args.get('directories')
 
-    files = await handlers_files.get_files(tags, file_types, directory, db)
+    files, code = await handlers_files.get_files(tags, file_types, directories, db)
     file_ids = [file["_id"] for file in files]
-    response = await handlers_files.patch_files(file_ids, db, new_directory=None)
-    return jsonify(response)
+    return await handlers_files.patch_files(file_ids, db, new_directory=None)
 
+
+@app.route('/files/<file_id>', methods=['GET'])
+async def download_file(file_id):
+    response, code = await handlers_files.download_file(file_id, db, telegram, chunker)
+    if code == 404:
+        return "File not found", 404
+
+    return await handlers_files.send_single_file(response)
+
+
+@app.route('/files/<file_id>', methods=['DELETE'])
+async def delete_file(file_id):
+    return await handlers_files.delete_file(file_id, db, telegram)
+
+
+@app.route('/files/<file_id>/meta', methods=['GET'])
+async def get_file(file_id):
+    return await handlers_files.get_file(file_id, db)
 
 
 if __name__ == '__main__':

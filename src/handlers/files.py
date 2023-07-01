@@ -47,13 +47,16 @@ async def get_files(tags, file_types, directories, db):
     files = []
     async for file in db["files"].find(query):
         files.append(file)
-    return utils.make_json_serializable(files)
+    return utils.make_json_serializable(files), 200
 
 
 async def get_file(file_id, db):
     file = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
     file = utils.make_json_serializable(file)
-    return file
+
+    if file is None:
+        return "File not found", 404
+    return file, 200
 
 
 async def delete_files(file_ids, db, telegram):
@@ -63,7 +66,8 @@ async def delete_files(file_ids, db, telegram):
         response = await delete_file(file_id, db, telegram)
         responses.append(response)
 
-    return responses
+    ids = [response[0] for response in responses if response[1] == 200]
+    return ids, 200 if len(ids) > 0 else 404
 
 
 async def delete_file(file_id, db, telegram):
@@ -85,7 +89,8 @@ async def patch_files(file_ids, db, new_directory=None, new_tags=None):
         response = await patch_file(file_id, db, new_directory, new_tags)
         responses.append(response)
 
-    return responses
+    ids = [response[0] for response in responses if response[1] == 200]
+    return ids, 200 if len(ids) > 0 else 404
 
 
 async def patch_file(file_id, db, new_directory=None, new_tags=None):
@@ -106,7 +111,8 @@ async def post_files_tags(file_ids, db, tags):
         response = await post_file_tags(file_id, db, tags)
         responses.append(response)
 
-    return responses
+    ids = [response[0] for response in responses if response[1] == 200]
+    return ids, 200 if len(ids) > 0 else 404
 
 
 async def post_file_tags(file_id, db, tags):
@@ -117,7 +123,7 @@ async def post_file_tags(file_id, db, tags):
     file_data["tags"] = list(set(file_data["tags"] + tags))
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
     file_data = utils.make_json_serializable(file_data)
-    return file_data["_id"]
+    return file_data["_id"], 200
 
 
 async def delete_files_tags(file_ids, db, tags):
@@ -127,7 +133,8 @@ async def delete_files_tags(file_ids, db, tags):
         response = await delete_file_tags(file_id, db, tags)
         responses.append(response)
 
-    return responses
+    ids = [response[0] for response in responses if response[1] == 200]
+    return ids, 200 if len(ids) > 0 else 404
 
 
 async def delete_file_tags(file_id, db, tags):
@@ -138,7 +145,7 @@ async def delete_file_tags(file_id, db, tags):
     file_data["tags"] = [tag for tag in file_data["tags"] if tag not in tags]
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
     file_data = utils.make_json_serializable(file_data)
-    return file_data["_id"]
+    return file_data["_id"], 200
 
 
 async def add_tags_to_files(file_ids, db, tags):
@@ -148,7 +155,8 @@ async def add_tags_to_files(file_ids, db, tags):
         response = await add_tags_to_file(file_id, db, tags)
         responses.append(response)
 
-    return responses
+    ids = [response[0] for response in responses if response[1] == 200]
+    return ids, 200 if len(ids) > 0 else 404
 
 
 async def add_tags_to_file(file_id, db, tags):
@@ -159,7 +167,7 @@ async def add_tags_to_file(file_id, db, tags):
     file_data["tags"] = list(set(file_data["tags"] + tags))
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
     file_data = utils.make_json_serializable(file_data)
-    return file_data["_id"]
+    return file_data["_id"], 200
 
 
 async def remove_tags_from_files(file_ids, db, tags):
@@ -169,7 +177,8 @@ async def remove_tags_from_files(file_ids, db, tags):
         response = await remove_tags_from_file(file_id, db, tags)
         responses.append(response)
 
-    return responses
+    ids = [response[0] for response in responses if response[1] == 200]
+    return ids, 200 if len(ids) > 0 else 404
 
 
 async def remove_tags_from_file(file_id, db, tags):
@@ -180,7 +189,7 @@ async def remove_tags_from_file(file_id, db, tags):
     file_data["tags"] = [tag for tag in file_data["tags"] if tag not in tags]
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
     file_data = utils.make_json_serializable(file_data)
-    return file_data["_id"]
+    return file_data["_id"], 200
 
 
 async def delete_all_tags_from_files(file_ids, db):
@@ -190,7 +199,8 @@ async def delete_all_tags_from_files(file_ids, db):
         response = await delete_all_tags_from_file(file_id, db)
         responses.append(response)
 
-    return responses
+    ids = [response[0] for response in responses if response[1] == 200]
+    return ids, 200 if len(ids) > 0 else 404
 
 
 async def delete_all_tags_from_file(file_id, db):
@@ -200,8 +210,7 @@ async def delete_all_tags_from_file(file_id, db):
 
     file_data["tags"] = []
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
-    file_data = utils.make_json_serializable(file_data)
-    return file_id
+    return file_id, 200
 
 
 async def upload_files(files, files_data, db, telegram, chunker):
@@ -215,7 +224,8 @@ async def upload_files(files, files_data, db, telegram, chunker):
         bar.update(1)
     bar.close()
 
-    return responses
+    ids = [response[0] for response in responses if response[1] == 200]
+    return ids, 200 if len(ids) > 0 else 404
 
 
 async def upload_file(file, file_data, db, telegram, chunker):
@@ -279,7 +289,7 @@ async def download_files(file_ids, db, telegram, chunker):
         bar.update(1)
     bar.close()
 
-    return await send_files(files)
+    return await send_files(files), 200
 
 
 async def download_file(file_id, db, telegram, chunker):
@@ -315,7 +325,7 @@ async def download_file(file_id, db, telegram, chunker):
     utils.clear_temp_folder()
 
     file_name = file_data["name"]
-    return file_name, bytes
+    return (file_name, bytes), 200
 
 
 async def send_files(files):
@@ -328,11 +338,15 @@ async def send_files(files):
 
     utils.clear_temp_folder()
 
-    return await send_file(return_data, as_attachment=True, attachment_filename="telecloud.zip")
+    return await send_file(return_data, as_attachment=True, attachment_filename="telecloud.zip"), 200
 
 
 async def send_single_file(file):
     file_name = file[0]
     bytes = file[1]
 
-    return await send_file(bytes, as_attachment=True, attachment_filename=file_name)
+    return_data = io.BytesIO()
+    return_data.write(bytes)
+    return_data.seek(0)
+
+    return await send_file(return_data, as_attachment=True, attachment_filename=file_name), 200
