@@ -96,7 +96,7 @@ async def patch_file(file_id, db, new_directory=None, new_tags=None):
     file_data["directory"] = new_directory or file_data["directory"]
     file_data["tags"] = new_tags or file_data["tags"]
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
-    return utils.make_json_serializable(file_data), 200
+    return utils.make_json_serializable(file_data["_id"]), 200
 
 
 async def post_files_tags(file_ids, db, tags):
@@ -117,7 +117,7 @@ async def post_file_tags(file_id, db, tags):
     file_data["tags"] = list(set(file_data["tags"] + tags))
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
     file_data = utils.make_json_serializable(file_data)
-    return file_data
+    return file_data["_id"]
 
 
 async def delete_files_tags(file_ids, db, tags):
@@ -138,7 +138,7 @@ async def delete_file_tags(file_id, db, tags):
     file_data["tags"] = [tag for tag in file_data["tags"] if tag not in tags]
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
     file_data = utils.make_json_serializable(file_data)
-    return file_data
+    return file_data["_id"]
 
 
 async def add_tags_to_files(file_ids, db, tags):
@@ -159,7 +159,7 @@ async def add_tags_to_file(file_id, db, tags):
     file_data["tags"] = list(set(file_data["tags"] + tags))
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
     file_data = utils.make_json_serializable(file_data)
-    return file_data
+    return file_data["_id"]
 
 
 async def remove_tags_from_files(file_ids, db, tags):
@@ -180,7 +180,7 @@ async def remove_tags_from_file(file_id, db, tags):
     file_data["tags"] = [tag for tag in file_data["tags"] if tag not in tags]
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
     file_data = utils.make_json_serializable(file_data)
-    return file_data
+    return file_data["_id"]
 
 
 async def delete_all_tags_from_files(file_ids, db):
@@ -201,7 +201,7 @@ async def delete_all_tags_from_file(file_id, db):
     file_data["tags"] = []
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
     file_data = utils.make_json_serializable(file_data)
-    return file_data
+    return file_id
 
 
 async def upload_files(files, files_data, db, telegram, chunker):
@@ -267,8 +267,7 @@ async def upload_file(file, file_data, db, telegram, chunker):
     }
 
     res = await db["files"].insert_one(file_data)
-    file_data["_id"] = str(res.inserted_id)
-    return utils.make_json_serializable(file_data), 200
+    return utils.make_json_serializable(res.inserted_id), 200
 
 
 async def download_files(file_ids, db, telegram, chunker):
