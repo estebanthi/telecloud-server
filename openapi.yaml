@@ -879,7 +879,7 @@ paths:
           description: OK
     delete:
       summary: Delete directories
-      description: Delete the directories according to the filter passed in parameters.
+      description: Deletes the directories according to the filter passed in parameters. Also deletes all files in the directories.
       tags:
         - Directories
       parameters:
@@ -901,6 +901,7 @@ paths:
             type: boolean
             example: true
           required: false
+          description: If true, also deletes child directories
       responses:
         "200":
           content:
@@ -1046,7 +1047,15 @@ paths:
         - Directories
     delete:
       summary: Delete directory
-      description: Delete the given directory.
+      description: Delete the given directory. Also deletes all files in the directory.
+      parameters:
+        - name: recursive
+          in: query
+          schema:
+            type: boolean
+            example: true
+          required: false
+          description: If true, also deletes child directories
       responses:
         "200":
           content:
@@ -1118,6 +1127,14 @@ paths:
     get:
       summary: Get directory children
       description: Get the children of the given directory.
+      parameters:
+        - name: recursive
+          in: query
+          schema:
+            type: boolean
+            example: true
+          required: false
+          description: If true, also returns children of children
       responses:
         "200":
           content:
@@ -1133,6 +1150,39 @@ paths:
           description: OK
       tags:
         - Directories
+    post:
+        summary: Add directory children
+        description: Add the given children to the given directory.
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    directories:
+                      type: array
+                      items:
+                        type: string
+                      example:
+                        - "123456789"
+                        - "987654321"
+                  description: IDs of the children to add
+        responses:
+            "200":
+              content:
+                application/json:
+                  schema:
+                    type: array
+                    items:
+                        type: string
+                    example:
+                    - "123456789"
+                    - "987654321"
+                    description: IDs of the added children
+              description: OK
+        tags:
+            - Directories
     put:
       summary: Remove directory children
       description: Remove the children of the given directory without deleting them.

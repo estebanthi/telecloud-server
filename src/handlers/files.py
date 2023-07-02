@@ -21,7 +21,7 @@ def get_files_query(tags, file_types, directories):
         query["tags"] = {"$all": tags}
 
     if file_types:
-        query["file_type"] = {"$in": file_types}
+        query["type"] = {"$in": file_types}
 
     if directories:
         query["$or"] = [{"directory": bson.ObjectId(directory)} for directory in directories]
@@ -80,18 +80,18 @@ async def delete_file(file_id, db, telegram):
     return utils.make_json_serializable(file_data), 200
 
 
-async def patch_files(file_ids, db, new_directory=None, new_tags=None):
+async def patch_files(file_ids, db, telegram, new_directory=None, new_tags=None):
     responses = []
 
     for file_id in file_ids:
-        response = await patch_file(file_id, db, new_directory, new_tags)
+        response = await patch_file(file_id, db, telegram, new_directory, new_tags)
         responses.append(response)
 
     ids = [response[0] for response in responses if response[1] == 200]
     return ids, 200 if len(ids) > 0 else 404
 
 
-async def patch_file(file_id, db, new_directory=None, new_tags=None):
+async def patch_file(file_id, db, telegram, new_directory=None, new_tags=None):
     file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
     if file_data is None:
         return "File not found", 404
@@ -106,136 +106,146 @@ async def patch_file(file_id, db, new_directory=None, new_tags=None):
             return "Invalid directory id", 400
 
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
+    await merge_similar_files(db, telegram, file_data["_id"])
+
     return utils.make_json_serializable(file_data["_id"]), 200
 
 
-async def post_files_tags(file_ids, db, tags):
+async def post_files_tags(file_ids, db, tags, telegram):
     responses = []
 
     for file_id in file_ids:
-        response = await post_file_tags(file_id, db, tags)
+        response = await post_file_tags(file_id, db, tags, telegram)
         responses.append(response)
 
     ids = [response[0] for response in responses if response[1] == 200]
     return ids, 200 if len(ids) > 0 else 404
 
 
-async def post_file_tags(file_id, db, tags):
+async def post_file_tags(file_id, db, tags, telegram):
     file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
     if file_data is None:
         return "File not found", 404
 
     file_data["tags"] = list(set(file_data["tags"] + tags))
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
+    await merge_similar_files(db, telegram, file_data["_id"])
+
     file_data = utils.make_json_serializable(file_data)
     return file_data["_id"], 200
 
 
-async def delete_files_tags(file_ids, db, tags):
+async def delete_files_tags(file_ids, db, tags, telegram):
     responses = []
 
     for file_id in file_ids:
-        response = await delete_file_tags(file_id, db, tags)
+        response = await delete_file_tags(file_id, db, tags, telegram)
         responses.append(response)
 
     ids = [response[0] for response in responses if response[1] == 200]
     return ids, 200 if len(ids) > 0 else 404
 
 
-async def delete_file_tags(file_id, db, tags):
+async def delete_file_tags(file_id, db, tags, telegram):
     file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
     if file_data is None:
         return "File not found", 404
 
     file_data["tags"] = [tag for tag in file_data["tags"] if tag not in tags]
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
+    await merge_similar_files(db, telegram, file_data["_id"])
+
     file_data = utils.make_json_serializable(file_data)
     return file_data["_id"], 200
 
 
-async def add_tags_to_files(file_ids, db, tags):
+async def add_tags_to_files(file_ids, db, tags, telegram):
     responses = []
 
     for file_id in file_ids:
-        response = await add_tags_to_file(file_id, db, tags)
+        response = await add_tags_to_file(file_id, db, tags, telegram)
         responses.append(response)
 
     ids = [response[0] for response in responses if response[1] == 200]
     return ids, 200 if len(ids) > 0 else 404
 
 
-async def add_tags_to_file(file_id, db, tags):
+async def add_tags_to_file(file_id, db, tags, telegram):
     file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
     if file_data is None:
         return "File not found", 404
 
     file_data["tags"] = list(set(file_data["tags"] + tags))
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
+    await merge_similar_files(db, telegram, file_data["_id"])
     file_data = utils.make_json_serializable(file_data)
     return file_data["_id"], 200
 
 
-async def remove_tags_from_files(file_ids, db, tags):
+async def remove_tags_from_files(file_ids, db, tags, telegram):
     responses = []
 
     for file_id in file_ids:
-        response = await remove_tags_from_file(file_id, db, tags)
+        response = await remove_tags_from_file(file_id, db, tags, telegram)
         responses.append(response)
 
     ids = [response[0] for response in responses if response[1] == 200]
     return ids, 200 if len(ids) > 0 else 404
 
 
-async def remove_tags_from_file(file_id, db, tags):
+async def remove_tags_from_file(file_id, db, tags, telegram):
     file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
     if file_data is None:
         return "File not found", 404
 
     file_data["tags"] = [tag for tag in file_data["tags"] if tag not in tags]
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
+    await merge_similar_files(db, telegram, file_data["_id"])
     file_data = utils.make_json_serializable(file_data)
     return file_data["_id"], 200
 
 
-async def delete_all_tags_from_files(file_ids, db):
+async def delete_all_tags_from_files(file_ids, db, telegram):
     responses = []
 
     for file_id in file_ids:
-        response = await delete_all_tags_from_file(file_id, db)
+        response = await delete_all_tags_from_file(file_id, db, telegram)
         responses.append(response)
 
     ids = [response[0] for response in responses if response[1] == 200]
     return ids, 200 if len(ids) > 0 else 404
 
 
-async def delete_all_tags_from_file(file_id, db):
+async def delete_all_tags_from_file(file_id, db, telegram):
     file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
     if file_data is None:
         return "File not found", 404
 
     file_data["tags"] = []
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
+    await merge_similar_files(db, telegram, file_data["_id"])
     return file_id, 200
 
 
-async def delete_files_directory(file_ids, db):
+async def delete_files_directory(file_ids, db, telegram):
     responses = []
 
     for file_id in file_ids:
-        response = await delete_file_directory(file_id, db)
+        response = await delete_file_directory(file_id, db, telegram)
         responses.append(response)
 
     ids = [response[0] for response in responses if response[1] == 200]
     return ids, 200 if len(ids) > 0 else 404
 
 
-async def delete_file_directory(file_id, db):
+async def delete_file_directory(file_id, db, telegram):
     file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
     if file_data is None:
         return "File not found", 404
 
     file_data["directory"] = None
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
+    await merge_similar_files(db, telegram, file_data["_id"])
     return file_id, 200
 
 
@@ -395,3 +405,16 @@ async def send_single_file(file):
     return_data.seek(0)
 
     return await send_file(return_data, as_attachment=True, attachment_filename=file_name), 200
+
+
+async def merge_similar_files(db, telegram, file_id):
+    file_data, code = await get_file(file_id, db)
+    if code == 200:
+        file = file_data
+        directories = [file["directory"]] if file["directory"] else []
+        files, code = await get_files(directories=directories, db=db, file_types=[file["type"]])
+        similar_files = [file_ for file_ in files if file_["name"] == file["name"] and file_["size"] == file["size"]]
+        if len(similar_files) > 1:
+            file_ids = [file["_id"] for file in similar_files]
+            await delete_files(file_ids[1:], db, telegram)
+    return utils.make_json_serializable(file_id), code
