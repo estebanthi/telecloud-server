@@ -32,7 +32,7 @@ async def download_files():
     file_types = request.args.getlist('types')
     directories = request.args.getlist('directories')
 
-    files, code = await handlers_files.get_files(tags, file_types, directories, db)
+    files, code = await handlers_files.get_files(db, tags=tags, file_types=file_types, directories=directories)
     file_ids = [file["_id"] for file in files]
 
     return await handlers_files.download_files(file_ids, db, telegram, chunker)
@@ -55,7 +55,7 @@ async def delete_files():
     file_types = request.args.getlist('types')
     directories = request.args.getlist('directories')
 
-    files, code = await handlers_files.get_files(tags, file_types, directories, db)
+    files, code = await handlers_files.get_files(db, tags=tags, file_types=file_types, directories=directories)
     file_ids = [file["_id"] for file in files]
 
     return await handlers_files.delete_files(file_ids, db, telegram)
@@ -66,7 +66,7 @@ async def get_files_ids():
     file_types = request.args.getlist('types')
     directories = request.args.getlist('directories')
 
-    files, code = await handlers_files.get_files(tags, file_types, directories, db)
+    files, code = await handlers_files.get_files(db, tags=tags, file_types=file_types, directories=directories)
     file_ids = [file["_id"] for file in files]
 
     return file_ids, 200
@@ -78,7 +78,7 @@ async def get_files():
     file_types = request.args.getlist('type')
     directories = request.args.get('directories')
 
-    return await handlers_files.get_files(tags, file_types, directories, db)
+    return await handlers_files.get_files(db, tags=tags, file_types=file_types, directories=directories)
 
 
 @app.route('/files/meta', methods=['PATCH'])
@@ -91,7 +91,7 @@ async def patch_files():
     new_tags = form.getlist("tags")
     new_directory = form.get("directory")
 
-    files, code = await handlers_files.get_files(tags, file_types, directories, db)
+    files, code = await handlers_files.get_files(db, tags=tags, file_types=file_types, directories=directories)
     file_ids = [file["_id"] for file in files]
     return await handlers_files.patch_files(file_ids, db, new_tags=new_tags, new_directory=new_directory)
 
@@ -105,7 +105,7 @@ async def add_tags_to_files():
     form = await request.form
     tags_to_add = form.getlist("tags")
 
-    files, code = await handlers_files.get_files(tags, file_types, directories, db)
+    files, code = await handlers_files.get_files(db, tags=tags, file_types=file_types, directories=directories)
     file_ids = [file["_id"] for file in files]
     return await handlers_files.add_tags_to_files(file_ids, db, tags_to_add)
 
@@ -119,7 +119,7 @@ async def remove_tags_in_files():
     form = await request.form
     tags_to_remove = form.getlist("tags")
 
-    files, code = await handlers_files.get_files(tags, file_types, directories, db)
+    files, code = await handlers_files.get_files(db, tags=tags, file_types=file_types, directories=directories)
     file_ids = [file["_id"] for file in files]
     return await handlers_files.remove_tags_from_files(file_ids, db, tags_to_remove)
 
@@ -130,7 +130,7 @@ async def delete_all_tags_in_files():
     file_types = request.args.getlist('types')
     directories = request.args.get('directories')
 
-    files, code = await handlers_files.get_files(tags, file_types, directories, db)
+    files, code = await handlers_files.get_files(db, tags=tags, file_types=file_types, directories=directories)
     file_ids = [file["_id"] for file in files]
     return await handlers_files.delete_all_tags_from_files(file_ids, db)
 
@@ -141,7 +141,7 @@ async def delete_files_directory():
     file_types = request.args.getlist('types')
     directories = request.args.get('directories')
 
-    files, code = await handlers_files.get_files(tags, file_types, directories, db)
+    files, code = await handlers_files.get_files(db, tags=tags, file_types=file_types, directories=directories)
     file_ids = [file["_id"] for file in files]
     return await handlers_files.delete_files_directory(file_ids, db)
 
