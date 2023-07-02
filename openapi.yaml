@@ -824,13 +824,13 @@ paths:
       tags:
         - Directories
       parameters:
-        - name: name
+        - name: names
           in: query
           schema:
             type: string
             example: pictures
           required: false
-        - name: parent
+        - name: parents
           in: query
           schema:
             type: string
@@ -883,13 +883,13 @@ paths:
       tags:
         - Directories
       parameters:
-        - name: name
+        - name: names
           in: query
           schema:
             type: string
             example: pictures
           required: false
-        - name: parent
+        - name: parents
           in: query
           schema:
             type: string
@@ -913,6 +913,39 @@ paths:
                   - "123456789"
                   - "987654321"
           description: OK
+  /directories/id:
+    summary: Interactions with directories' ids
+    get:
+      summary: Get directories ids
+      description: Get the ids of the directories according to the filter passed
+        in parameters.
+      tags:
+        - Directories
+      parameters:
+        - name: names
+          in: query
+          schema:
+            type: string
+            example: pictures
+          required: false
+        - name: parents
+          in: query
+          schema:
+            type: string
+            example: "123456789"
+          required: false
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - "123456789"
+                  - "987654321"
+          description: OK
   /directories/meta:
     summary: Interactions with directories' representation
     get:
@@ -922,13 +955,13 @@ paths:
       tags:
         - Directories
       parameters:
-        - name: name
+        - name: names
           in: query
           schema:
             type: string
             example: pictures
           required: false
-        - name: parent
+        - name: parents
           in: query
           schema:
             type: string
@@ -950,13 +983,13 @@ paths:
       tags:
         - Directories
       parameters:
-        - name: name
+        - name: names
           in: query
           schema:
             type: string
             example: pictures
           required: false
-        - name: parent
+        - name: parents
           in: query
           schema:
             type: string
@@ -1124,13 +1157,13 @@ paths:
       summary: Get tags
       description: Get tags according to the filter passed in parameters.
       parameters:
-        - name: name
+        - name: names
           in: query
           schema:
             type: string
             example: pictures
           required: false
-        - name: parent
+        - name: parents
           in: query
           schema:
             type: string
@@ -1182,13 +1215,13 @@ paths:
       summary: Delete tags
       description: Deletes tags according to the filter passed in parameters.
       parameters:
-        - name: name
+        - name: names
           in: query
           schema:
             type: string
             example: pictures
           required: false
-        - name: parent
+        - name: parents
           in: query
           schema:
             type: string
@@ -1206,6 +1239,39 @@ paths:
                   - "123456789"
                   - "987654321"
                 description: IDs of the deleted tags
+          description: OK
+      tags:
+        - Tags
+  /tags/id:
+    summary: Interactions with tags
+    get:
+      summary: Get tags
+      description: Get tags according to the filter passed in parameters.
+      parameters:
+        - name: names
+          in: query
+          schema:
+            type: string
+            example: pictures
+          required: false
+        - name: parents
+          in: query
+          schema:
+            type: string
+            example: "123456789"
+          required: false
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - "123456789"
+                  - "987654321"
+                description: IDs of the tags
           description: OK
       tags:
         - Tags
