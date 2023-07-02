@@ -57,6 +57,7 @@ async def get_file(file_id, db):
 
 
 async def delete_files(file_ids, db, telegram):
+    print(file_ids)
     responses = []
 
     for file_id in file_ids:
@@ -95,9 +96,15 @@ async def patch_file(file_id, db, new_directory=None, new_tags=None):
     if file_data is None:
         return "File not found", 404
 
-    print(new_directory)
     file_data["directory"] = new_directory or file_data["directory"]
     file_data["tags"] = new_tags or file_data["tags"]
+
+    if isinstance(file_data["directory"], str):
+        try:
+            file_data["directory"] = bson.ObjectId(file_data["directory"])
+        except bson.errors.InvalidId:
+            return "Invalid directory id", 400
+
     await db["files"].update_one({"_id": bson.ObjectId(file_id)}, {"$set": file_data})
     return utils.make_json_serializable(file_data["_id"]), 200
 
@@ -260,7 +267,14 @@ async def upload_file(file, file_data, db, telegram, chunker):
     type_ = file_data["type"]
     size = file_data["size"]
     tags = file_data["tags"] if "tags" in file_data else []
+
     directory = file_data["directory"] if "directory" in file_data else None
+    if isinstance(directory, str):
+        try:
+            directory = bson.ObjectId(directory)
+        except bson.errors.InvalidId:
+            return f"Invalid directory id for file {name}", 400
+
     created_at = file_data["created_at"] if "created_at" in file_data else None
     uploaded_at = dt.datetime.now()
 
