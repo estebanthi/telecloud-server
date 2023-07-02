@@ -27,3 +27,11 @@ def clear_temp_folder():
     if shutil.os.path.exists(path):
         shutil.rmtree(path)
     shutil.os.mkdir(path)
+
+
+def rename_duplicates(names):
+    names = names.copy()
+    for i in range(len(names)):
+        if names[i] in names[:i]:
+            names[i] = f"{names[i]} ({names[:i].count(names[i])})"
+    return names

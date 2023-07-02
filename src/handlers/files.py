@@ -41,12 +41,9 @@ async def progress(current, total, index=None, max_file_size=None):
     prev_curr += index * max_file_size if (index is not None and max_file_size is not None) else prev_curr
 
 
-async def get_files(tags, file_types, directories, db):
+async def get_files(db, tags=None, file_types=None, directories=None):
     query = get_files_query(tags, file_types, directories)
-
-    files = []
-    async for file in db["files"].find(query):
-        files.append(file)
+    files = await db["files"].find(query).to_list(None)
     return utils.make_json_serializable(files), 200
 
 
@@ -312,6 +309,17 @@ async def download_files(file_ids, db, telegram, chunker):
     bar.close()
 
     files = [file[0] for file in files if file is not None]
+
+    file_names = [file[0] for file in files if file is not None]
+    file_names = utils.rename_duplicates(file_names)
+
+    files_bytes = [file[1] for file in files if file is not None]
+
+
+    files = []
+    for file_name, file_bytes in zip(file_names, files_bytes):
+        files.append((file_name, file_bytes))
+
     return await send_files(files)
 
 
