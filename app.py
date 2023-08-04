@@ -10,6 +10,7 @@ from src.chunker import Chunker
 
 import src.handlers.files as handlers_files
 import src.handlers.directories as handlers_directories
+import src.handlers.tags as handlers_tags
 
 import src.utils as utils
 
@@ -324,6 +325,78 @@ async def remove_directory_children(directory_id):
 
     return await handlers_directories.remove_directory_children(directory_id, db, directories, recursive=recursive)
 
+
+@app.route('/tags', methods=['GET'])
+async def get_tags():
+    names = request.args.getlist('names')
+    parents = request.args.getlist('parents')
+    recursive = request.args.get('recursive')
+    return await handlers_tags.get_tags(db, names=names, parents=parents, recursive=recursive)
+
+
+@app.route('/tags', methods=['POST'])
+async def create_tag():
+    form = await request.form
+    name = form.get("name")
+    parent = form.get("parent")
+    return await handlers_tags.create_tag(db, name, parent)
+
+
+@app.route('/tags', methods=['DELETE'])
+async def delete_tags():
+    names = request.args.getlist('names')
+    parents = request.args.getlist('parents')
+    recursive = request.args.get('recursive')
+
+    tags, code = await handlers_tags.get_tags(db, names=names, parents=parents, recursive=recursive)
+    tags_ids = [tag["_id"] for tag in tags]
+    return await handlers_tags.delete_tags(tags_ids, db, telegram)
+
+
+@app.route('/tags/id', methods=['GET'])
+async def get_tags_ids():
+    names = request.args.getlist('names')
+    parents = request.args.getlist('parents')
+    recursive = request.args.get('recursive')
+
+    tags, code = await handlers_tags.get_tags(db, names=names, parents=parents, recursive=recursive)
+    tags_ids = [tag["_id"] for tag in tags]
+
+    return tags_ids, 200
+
+
+@app.route('/tags/<tag_id>', methods=['GET'])
+async def get_tag(tag_id):
+    return await handlers_tags.get_tag(db, tag_id)
+
+
+@app.route('/tags/<tag_id>', methods=['PATCH'])
+async def patch_tag(tag_id):
+    form = await request.form
+    new_name = form.get("new_name")
+    new_parent = form.get("new_parent")
+
+    return await handlers_tags.patch_tag(tag_id, db, telegram, new_name=new_name, new_parent=new_parent)
+
+
+@app.route('/tags/<tag_id>', methods=['DELETE'])
+async def delete_tag(tag_id):
+    return await handlers_tags.delete_tag(tag_id, db, telegram)
+
+
+@app.route('/tags/<tag_id>/children', methods=['GET'])
+async def get_tag_children(tag_id):
+    recursive = request.args.get('recursive')
+
+    return await handlers_tags.get_tag_children(tag_id, db, recursive=recursive)
+
+
+@app.route('/tags/<tag_id>/children', methods=['PUT'])
+async def remove_tag_children(tag_id):
+    form = await request.form
+    recursive = request.args.get('recursive')
+
+    return await handlers_tags.remove_tag_children(tag_id, db, telegram, recursive=recursive)
 
 
 if __name__ == '__main__':
