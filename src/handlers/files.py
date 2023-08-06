@@ -24,7 +24,7 @@ def get_files_query(tags, file_types, directories):
         query["type"] = {"$in": file_types}
 
     if directories:
-        query["$or"] = [{"directory": bson.ObjectId(directory)} for directory in directories]
+        query["$or"] = [{"directory": bson.ObjectId(directory) if directory != "/" else None} for directory in directories]
 
     return query
 
@@ -91,13 +91,14 @@ async def patch_files(file_ids, db, telegram, new_directory=None, new_tags=None)
     return ids, 200 if len(ids) > 0 else 404
 
 
-async def patch_file(file_id, db, telegram, new_directory=None, new_tags=None):
+async def patch_file(file_id, db, telegram, new_directory=None, new_tags=None, new_name=None):
     file_data = await db["files"].find_one({"_id": bson.ObjectId(file_id)})
     if file_data is None:
         return "File not found", 404
 
     file_data["directory"] = new_directory or file_data["directory"]
     file_data["tags"] = new_tags or file_data["tags"]
+    file_data["name"] = new_name or file_data["name"]
 
     if isinstance(file_data["directory"], str):
         try:
@@ -274,14 +275,14 @@ async def upload_file(file, file_data, db, telegram, chunker):
     if not validators.validate_file_upload(file_data):
         return f"Invalid file data for file {name}", 400
 
-    type_ = file_data["type"]
-    size = file_data["size"]
+    type_ = file_data["type"] if "type" in file_data else None
+    size = file_data["size"] if "size" in file_data else None
     tags = file_data["tags"] if "tags" in file_data else []
 
     directory = file_data["directory"] if "directory" in file_data else None
     if isinstance(directory, str):
         try:
-            directory = bson.ObjectId(directory)
+            directory = bson.ObjectId(directory) if directory != '/' else None
         except bson.errors.InvalidId:
             return f"Invalid directory id for file {name}", 400
 

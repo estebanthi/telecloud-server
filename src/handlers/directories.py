@@ -32,6 +32,8 @@ async def get_directory(db, directory_id):
 
 
 async def create_directory(db, name, parent):
+    if parent == "/":
+        parent = None
     directory = await db.directories.find_one({"name": name, "parent": bson.ObjectId(parent)})
     if directory:
         return "Directory already exists", 409
@@ -51,7 +53,12 @@ async def delete_directory(directory_id, db, telegram):
     if directory:
         await db.directories.delete_one({"_id": bson.ObjectId(directory_id)})
 
-        directory_files, code = await handlers_files.get_files(db, directories=[directory_id])
+        directories, code = await get_directories(db, parents=[directory_id], recursive=True)
+        directories_ids = [directory["_id"] for directory in directories]
+
+        await delete_directories(directories_ids, db, telegram)
+
+        directory_files, code = await handlers_files.get_files(db, directories=[directory_id] + directories_ids)
         await handlers_files.delete_files([file["_id"] for file in directory_files], db, telegram)
         return utils.make_json_serializable(directory["_id"]), 200
     else:
@@ -131,6 +138,6 @@ async def merge_similar_directories(db, telegram, directory_id):
         if len(similar_directories) > 1:
             files, code = await handlers_files.get_files(db, directories=[directory_["_id"] for directory_ in similar_directories])
             files_ids = [file["_id"] for file in files]
-            await handlers_files.patch_files(files_ids, db, new_directory=directory["_id"])
+            await handlers_files.patch_files(files_ids, db, telegram, new_directory=directory["_id"])
             await delete_directories([similar_directory["_id"] for similar_directory in similar_directories[1:]], db, telegram)
         return utils.make_json_serializable(directory["_id"]), 200

@@ -78,8 +78,8 @@ async def get_files_ids():
 
 @app.route('/files/meta', methods=['GET'])
 async def get_files():
-    tags = request.args.getlist('tag')
-    file_types = request.args.getlist('type')
+    tags = request.args.getlist('tags')
+    file_types = request.args.getlist('types')
     directories = request.args.getlist('directories')
 
     return await handlers_files.get_files(db, tags=tags, file_types=file_types, directories=directories)
@@ -174,8 +174,9 @@ async def patch_file(file_id):
     form = await request.form
     new_tags = form.getlist("tags")
     new_directory = form.get("directory")
+    new_name = form.get("name")
 
-    return await handlers_files.patch_file(file_id, db, telegram, new_tags=new_tags, new_directory=new_directory)
+    return await handlers_files.patch_file(file_id, db, telegram, new_tags=new_tags, new_directory=new_directory, new_name=new_name)
 
 
 @app.route('/files/<file_id>/meta/tags', methods=['POST'])
@@ -290,16 +291,16 @@ async def delete_directory(directory_id):
 
 @app.route('/directories/<directory_id>/meta', methods=['GET'])
 async def get_directory(directory_id):
-    return await handlers_directories.get_directory(directory_id, db)
+    return await handlers_directories.get_directory(db, directory_id)
 
 
 @app.route('/directories/<directory_id>/meta', methods=['PATCH'])
 async def patch_directory(directory_id):
     form = await request.form
-    new_name = form.get("new_name")
-    new_parent = form.get("new_parent")
+    name = form.get("name")
+    parent = form.get("parent")
 
-    return await handlers_directories.patch_directory(directory_id, db, telegram, new_name=new_name, new_parent=new_parent)
+    return await handlers_directories.patch_directory(directory_id, db, telegram, new_name=name, new_parent=parent)
 
 
 @app.route('/directories/<directory_id>/meta/children', methods=['GET'])
@@ -397,6 +398,47 @@ async def remove_tag_children(tag_id):
     recursive = request.args.get('recursive')
 
     return await handlers_tags.remove_tag_children(tag_id, db, telegram, recursive=recursive)
+
+
+@app.route('/structure/directories', methods=['GET'])
+async def get_directories_structure():
+    directories, code = await handlers_directories.get_directories(db)
+
+    structure = {}
+    for directory in directories:
+        if directory["parent"] is None:
+            structure[f"/{directory['name']}"] = directory["_id"]
+        else:
+            parent = directory["parent"]
+            path = f"/{directory['name']}"
+            while parent is not None:
+                parent_directory, code = await handlers_directories.get_directory(db, parent)
+                path = f"/{parent_directory['name']}{path}"
+                parent = parent_directory["parent"]
+
+            structure[path] = directory["_id"]
+
+    structure["/"] = '/'
+    return structure, 200
+
+
+@app.route('/structure/files', methods=['GET'])
+async def get_files_structure():
+    structure = {}
+
+    files, code = await handlers_files.get_files(db)
+    for file in files:
+        path = f"/{file['name']}"
+        directory_id = file["directory"]
+        while directory_id is not None:
+            directory, code = await handlers_directories.get_directory(db, directory_id)
+            if code != 200:
+                return
+            path = f"/{directory['name']}{path}"
+            directory_id = directory["parent"] if directory["parent"] is not None else None
+
+        structure[path] = file["_id"]
+    return structure, 200
 
 
 if __name__ == '__main__':
