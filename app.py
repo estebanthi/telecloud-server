@@ -27,6 +27,11 @@ app = Quart(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024 * 2 * 10  # 20 GB
 
 
+@app.route('/', methods=['GET'])
+async def test_connection():
+    return "Connection established", 200
+
+
 @app.route('/files', methods=['GET'])
 async def download_files():
     tags = request.args.getlist('tags')
