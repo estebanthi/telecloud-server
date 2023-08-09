@@ -4,3 +4,5 @@
 config.yaml
 **.pyc
 session.session-journal
+
+dist
