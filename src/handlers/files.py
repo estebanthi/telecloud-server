@@ -301,6 +301,13 @@ async def upload_file(file, file_data, db, telegram, chunker):
     pbar = tqdm(total=file_data["size"], unit="B", unit_scale=True, desc=name, initial=prev_curr)
     for index, chunk in enumerate(chunks):
 
+        if len(chunks) == 1:
+            if '/' in type_:
+                extension = type_.split('/')[1]
+                with open(f'temp.{extension}', 'wb') as f:
+                    f.write(chunk.read())
+                chunk = 'temp.' + extension
+
         message = await telegram.client.send_file(telegram.chanel_name, chunk, caption=f"{name} - {index + 1}/{len(chunks)}", progress_callback=lambda current, total: progress(current, total, index, telegram.max_file_size))
         chunks_ids.append(message.id)
 
@@ -364,7 +371,7 @@ async def download_file(file_id, db, telegram, chunker):
 
         if not os.path.exists("temp"):
             os.mkdir("temp")
-        file_path = f"temp/{chunk_id}"
+        file_path = f"temp/{chunk_id}" + message.file.ext if message.file.ext else f"temp/{chunk_id}"
 
         prev_curr = 0
         pbar = tqdm(total=message.file.size, unit="B", unit_scale=True, desc=file_data["name"])
@@ -376,6 +383,7 @@ async def download_file(file_id, db, telegram, chunker):
     chunks_pbar.close()
     pbar.close()
 
+    print(chunks, os.listdir("temp"))
     bytes = chunker.join(chunks)
 
     utils.clear_temp_folder()
