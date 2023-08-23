@@ -1,8 +1,4 @@
-.idea
-*.session
-.env
-config.yaml
+venv
 **.pyc
-session.session-journal
-
-dist
+.idea
+session.session
