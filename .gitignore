@@ -2,5 +2,6 @@ venv
 **.pyc
 .idea
 session.session
+config.yam
 temp.*
 temp
