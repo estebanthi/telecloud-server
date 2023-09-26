@@ -1,0 +1,8 @@
+telegram_api_id: 1234567
+telegram_api_hash: myhash
+telegram_chanel: Me  # name of the Telegram channel where you want to store data
+
+mongo_uri: <mongo_uri>
+db_name: telecloud
+
+
